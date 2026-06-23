@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso a Programas</title>
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box; font-family:Arial, sans-serif;}
+    body {background:#0a0a1a; color:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px;}
+    .caja {background:#15152b; border-radius:16px; padding:30px; width:100%; max-width:450px; border:1px solid #00d2ff33;}
+    h2 {text-align:center; color:#00e5ff; margin-bottom:25px;}
+    input {width:100%; padding:12px; margin:10px 0; border-radius:8px; border:none; background:#1e1e3f; color:#fff; font-size:16px;}
+    button {width:100%; padding:14px; background:#009ee3; border:none; border-radius:8px; color:white; font-weight:bold; cursor:pointer; font-size:16px;}
+    button:hover {background:#0088cc;}
+    .archivo {padding:20px; margin:15px 0; border-radius:8px; background:#1e1e3f; text-align:center;}
+    .disponible {border:1px solid #34d399;}
+    .usado {border:1px solid #a5a5a5; color:#a5a5a5;}
+    .mensaje-espera {margin-top:12px; font-size:15px; color:#94a3b8; line-height:1.5;}
+    .mensaje {padding:10px; border-radius:6px; text-align:center; font-weight:bold; margin-top:10px; display:none;}
+    .ok {background:rgba(52,211,153,0.15); color:#34d399;}
+    .error {background:rgba(239,68,68,0.15); color:#ef4444;}
+  </style>
+</head>
+<body>
+  <div class="caja">
+    <h2>🔒 Acceso a Programas</h2>
+    <div id="login">
+      <input type="text" id="usuario" placeholder="Usuario">
+      <input type="password" id="clave" placeholder="Contraseña">
+      <button onclick="ingresar()">Ingresar</button>
+      <div id="msgLogin" class="mensaje"></div>
+    </div>
+    <div id="contenido" style="display:none;">
+      <h3 style="margin-bottom:20px; color:#00e5ff; text-align:center;">Programa del día</h3>
+      <div id="lista"></div>
+      <button onclick="cerrar()" style="background:#6b7280; margin-top:20px;">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <script>
+    // 🔐 30 USUARIOS FIJOS
+    const usuarios = {
+      "radio1": {clave:"radio123"},
+      "radio2": {clave:"radio234"},
+      "radio3": {clave:"radio345"},
+      "radio4": {clave:"radio456"},
+      "radio5": {clave:"radio567"},
+      "radio6": {clave:"radio678"},
+      "radio7": {clave:"radio789"},
+      "radio8": {clave:"radio890"},
+      "radio9": {clave:"radio901"},
+      "radio10": {clave:"radio1011"},
+      "radio11": {clave:"radio1112"},
+      "radio12": {clave:"radio1213"},
+      "radio13": {clave:"radio1314"},
+      "radio14": {clave:"radio1415"},
+      "radio15": {clave:"radio1516"},
+      "radio16": {clave:"radio1617"},
+      "radio17": {clave:"radio1718"},
+      "radio18": {clave:"radio1819"},
+      "radio19": {clave:"radio1920"},
+      "radio20": {clave:"radio2021"},
+      "radio21": {clave:"radio2122"},
+      "radio22": {clave:"radio2223"},
+      "radio23": {clave:"radio2324"},
+      "radio24": {clave:"radio2425"},
+      "radio25": {clave:"radio2526"},
+      "radio26": {clave:"radio2627"},
+      "radio27": {clave:"radio2728"},
+      "radio28": {clave:"radio2829"},
+      "radio29": {clave:"radio2930"},
+      "radio30": {clave:"radio3031"}
+    };
+
+    // 📌 TU ENLACE (OCULTO Y PROTEGIDO)
+    const ENLACE_PROGRAMA = "https://www.dropbox.com/scl/fi/d1oixa5115bzlzk92x78s/programa_hoy.mp3?rlkey=gg0eopy61y3v60m8as42u0sfl&dl=1";
+
+    // ⏰ HORA DE CAMBIO: 13:00 HS
+    const HORA_CAMBIO = 13;
+    let usuarioActual = "";
+
+    // 📅 Cálculo del ciclo diario
+    function fechaCicloActual() {
+      const ahora = new Date();
+      let año = ahora.getFullYear();
+      let mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      let dia = String(ahora.getDate()).padStart(2, '0');
+      if (ahora.getHours() < HORA_CAMBIO) {
+        const ayer = new Date(ahora);
+        ayer.setDate(ayer.getDate() - 1);
+        año = ayer.getFullYear();
+        mes = String(ayer.getMonth() + 1).padStart(2, '0');
+        dia = String(ayer.getDate()).padStart(2, '0');
+      }
+      return `${año}-${mes}-${dia}`;
+    }
+
+    function yaDescargoEnCiclo() {
+      const registro = localStorage.getItem(`descargado_${usuarioActual}`);
+      return registro === fechaCicloActual();
+    }
+
+    function marcarComoDescargado() {
+      localStorage.setItem(`descargado_${usuarioActual}`, fechaCicloActual());
+    }
+
+    // ⬇️ DESCARGA DIRECTA SIN MOSTRAR LA URL
+    function descargaSegura() {
+      const enlaceTemporal = document.createElement("a");
+      enlaceTemporal.href = ENLACE_PROGRAMA;
+      enlaceTemporal.download = "programa_hoy.mp3";
+      enlaceTemporal.style.display = "none";
+      document.body.appendChild(enlaceTemporal);
+      enlaceTemporal.click();
+      document.body.removeChild(enlaceTemporal);
+    }
+
+    function ingresar() {
+      const u = document.getElementById("usuario").value.trim();
+      const c = document.getElementById("clave").value.trim();
+      const msg = document.getElementById("msgLogin");
+      msg.style.display = "none";
+      if (!usuarios[u]) return mostrar(msg, "❌ Usuario no existe", "error");
+      if (usuarios[u].clave !== c) return mostrar(msg, "❌ Contraseña incorrecta", "error");
+      usuarioActual = u;
+      document.getElementById("login").style.display = "none";
+      document.getElementById("contenido").style.display = "block";
+      mostrarEstado();
+    }
+
+    function mostrarEstado() {
+      const lista = document.getElementById("lista");
+      if (!yaDescargoEnCiclo()) {
+        lista.innerHTML = `
+          <div class="archivo disponible">
+            <p style="font-size:18px; font-weight:bold; margin-bottom:15px;">📻 Programa disponible</p>
+            <button onclick="bajar()">⬇️ Descargar ahora</button>
+          </div>`;
+      } else {
+        lista.innerHTML = `
+          <div class="archivo usado">
+            <p style="font-size:18px; font-weight:bold; margin-bottom:10px;">✅ Ya descargado</p>
+            <p class="mensaje-espera">📅 Próximo programa disponible a partir de las 13:00 hs</p>
+          </div>`;
+      }
+    }
+
+    function bajar() {
+      marcarComoDescargado();
+      descargaSegura();
+      mostrarEstado();
+    }
+
+    function cerrar() {
+      usuarioActual = "";
+      document.getElementById("login").style.display = "block";
+      document.getElementById("contenido").style.display = "none";
+      document.getElementById("usuario").value = "";
+      document.getElementById("clave").value = "";
+    }
+
+    function mostrar(el, texto, tipo) {
+      el.textContent = texto;
+      el.className = `mensaje ${tipo}`;
+      el.style.display = "block";
+    }
+  </script>
+</body>
+</html>
